@@ -1,0 +1,116 @@
+---
+title: My dynamic report
+output: html_fragment
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE, error=FALSE)
+
+```
+
+
+```{css}
+p {
+ font-family: "Roboto", sans-serif;
+ font-style: italic;
+ font-size:25px;
+}
+body{
+ font-family: "Sans-serif";
+ color: #pink;
+ background-color:  #B5D4FA;
+}
+h1 {
+ font-family: "Sans-serif";
+ font-weight: 300;
+ color: #B5E2FA;
+ background-color: #0E82B0;
+}
+h2 {
+ font-family: "Serif";
+ font-weight: 300;
+ color:# #pink;
+ background-color: #0F76B1;
+}
+a {
+color: #7F77EA;
+}
+```
+
+
+## Survey on personal gaming habits and preferences
+
+```{r}
+library(tidyverse)
+csv_url <- "https://docs.google.com/spreadsheets/d/e/2PACX-1vThBvL7LD2j-RyQdOnf8zY2ALKLTnYjRxJC1O0xBf8qkxZweRCmTG3BS6CAua4n7uRU-RaB67xA0ZYj/pub?output=csv"
+logged_data <- read_csv(csv_url)
+head(logged_data)
+#Part D
+#Rename the questions 
+latest_data <- logged_data %>%
+  rename(
+    play_regularly = `Do you play games regularly?`,
+    
+    game_type = `If you play games, what types of games do you usually play?`,  
+    hours_per_week = `How many hours do you spend playing games on average every times?(unit:hours)`, 
+    impact_of_playing = `What do you think is the impact of playing games on normal life?` 
+ )
+
+# Average gaming time
+mean_hours <- mean(latest_data$hours_per_week, na.rm = TRUE)  # na.rm = TRUE is used to handle missing values
+median_hours <- median(latest_data$hours_per_week, na.rm = TRUE)  # Median
+
+# Number of regular players
+regular_players <- latest_data %>%
+  filter(play_regularly == "Play regularly (more than 3 times per week)") %>%
+  nrow()  # Count the number of rows
+
+
+#Plot 1: Game Frequency Distribution
+ggplot(latest_data, aes(x = play_regularly)) +
+  geom_bar(fill = "#98D798") +
+  labs(title = "Game Frequency Distribution",
+       x = "Game Frequency",
+       y = "Number of People")+
+  theme(
+    panel.background = element_rect(fill = "#FFEDEE")
+  )+
+  coord_flip() #For better readability
+
+#summary for the first plot
+print(paste("Average weekly gaming time:",mean_hours, "hours"))
+print(paste("Number of regular players:", regular_players, "people"))
+print(paste("Median weekly gaming time:", median_hours, "hours"))
+
+
+#Plot 2: The distribution of game types
+# 1. Split game types and count the number of each game type
+game_type_counts <- latest_data %>%
+  separate_rows(game_type, sep = ", ") %>%  
+  group_by(game_type) %>%  
+  summarise(count = n()) %>%  
+  arrange(desc(count)) %>%  
+  filter(game_type != "none")  # Remove "None"
+
+
+ggplot(game_type_counts, aes(x = reorder(game_type, count), y = count)) +  # reorder function sorts by count
+  geom_bar(stat = "identity", fill = "skyblue") +  
+  coord_flip() +  # Rotate the bar chart 90 degrees
+  labs(title = "Game Type Distribution",
+       x = "Game Type",
+       y = "Number of Selections") +
+  theme(panel.background = element_rect(fill = "lightyellow"))
+
+# Find the most popular and least popular game type with the highest count
+most_popular_game <- game_type_counts %>%
+  slice_max(count, n = 1)  
+least_popular_game <- game_type_counts %>%
+  slice_min(count, n = 1)  
+
+#summary for the second plot
+print(paste("The most popular game type is:", most_popular_game$game_type, ", selected by", most_popular_game$count, "users"))
+print(paste("The least popular game type is:", least_popular_game$game_type, ", selected by", least_popular_game$count, "users"))
+
+
+```
+
